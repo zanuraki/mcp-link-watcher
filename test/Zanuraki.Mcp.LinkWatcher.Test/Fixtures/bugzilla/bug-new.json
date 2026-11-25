@@ -1,0 +1,11 @@
+{
+  "bugs": [
+    {
+      "id": 7,
+      "summary": "Typo in settings dialog",
+      "status": "NEW",
+      "resolution": "",
+      "last_change_time": "2025-04-02T08:15:00Z"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "bugs": {
+    "5": {
+      "comments": [
+        {
+          "id": 501,
+          "creator": "reporter@example.org",
+          "creation_time": "2025-02-27T09:00:00Z",
+          "text": "Saving a large document crashes the editor."
+        },
+        {
+          "id": 502,
+          "creator": "maintainer@example.org",
+          "creation_time": "2025-03-01T12:00:00Z",
+          "text": "Fixed in the next release."
+        }
+      ]
+    }
+  },
+  "comments": {}
+}

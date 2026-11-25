@@ -20,4 +20,8 @@
     <PackageReference Include="TUnit" Version="1.87.12" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
