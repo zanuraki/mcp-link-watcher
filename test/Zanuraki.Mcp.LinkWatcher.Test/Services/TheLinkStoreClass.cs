@@ -86,6 +86,15 @@ public abstract class TheLinkStoreClass
 
             store.GetAll().Select(link => link.Id).ShouldBe(["github-anthropics-claude-code-15542"]);
         }
+
+        [Test]
+        public void ShouldIgnoreMarkdownFilesWithIdsOutsideSlugFormat()
+        {
+            Directory.CreateDirectory(DataPath);
+            File.WriteAllText(Path.Combine(DataPath, "Not_A_Slug.md"), "not a link");
+
+            CreateStore().GetAll().ShouldBeEmpty();
+        }
     }
 
     public class TheGetMethod : TheLinkStoreClass
@@ -94,6 +103,12 @@ public abstract class TheLinkStoreClass
         public void ShouldReturnNullWhenMissing()
         {
             CreateStore().Get("missing").ShouldBeNull();
+        }
+
+        [Test]
+        public void ShouldRejectIdOutsideSlugFormat()
+        {
+            Should.Throw<ArgumentException>(() => { CreateStore().Get("../outside"); });
         }
 
         [Test]
@@ -151,6 +166,16 @@ public abstract class TheLinkStoreClass
                 - 2026-11-25: added; upstream OPEN.
 
                 """.ReplaceLineEndings("\n"));
+        }
+
+        [Test]
+        public void ShouldRejectIdOutsideSlugFormatAndWriteNothingOutsideTheFolder()
+        {
+            var link = CreateLink() with { Id = "../escaped" };
+
+            Should.Throw<ArgumentException>(() => CreateStore().Save(link));
+
+            File.Exists(Path.Combine(Path.GetDirectoryName(DataPath)!, "escaped.md")).ShouldBeFalse();
         }
 
         [Test]
@@ -242,6 +267,18 @@ public abstract class TheLinkStoreClass
         {
             CreateStore().Delete("missing").ShouldBeFalse();
         }
+
+        [Test]
+        public void ShouldRejectIdOutsideSlugFormatWithoutDeletingOutsideTheFolder()
+        {
+            var outside = Path.Combine(Path.GetDirectoryName(DataPath)!, "outside.md");
+            Directory.CreateDirectory(Path.GetDirectoryName(DataPath)!);
+            File.WriteAllText(outside, "outside");
+
+            Should.Throw<ArgumentException>(() => CreateStore().Delete("../outside"));
+
+            File.Exists(outside).ShouldBeTrue();
+        }
     }
 
     public class TheGetStateMethod : TheLinkStoreClass
@@ -250,6 +287,15 @@ public abstract class TheLinkStoreClass
         public void ShouldReturnNullWhenMissing()
         {
             CreateStore().GetState("missing").ShouldBeNull();
+        }
+
+        [Test]
+        public void ShouldRejectIdOutsideSlugFormatOnReadAndWrite()
+        {
+            var store = CreateStore();
+
+            Should.Throw<ArgumentException>(() => store.SaveState(new LinkState { Id = "a/b" }));
+            Should.Throw<ArgumentException>(() => { store.GetState("a/b"); });
         }
 
         [Test]
@@ -301,5 +347,37 @@ public abstract class TheLinkStoreClass
         {
             CreateStore().PruneOrphanedStates().ShouldBe(0);
         }
+
+        [Test]
+        public void ShouldIgnoreStateFilesWithIdsOutsideSlugFormat()
+        {
+            Directory.CreateDirectory(StatePath);
+            File.WriteAllText(Path.Combine(StatePath, "Not_A_Slug.json"), "{}");
+
+            CreateStore().PruneOrphanedStates().ShouldBe(0);
+
+            File.Exists(Path.Combine(StatePath, "Not_A_Slug.json")).ShouldBeTrue();
+        }
+    }
+
+    public class TheIsValidIdMethod : TheLinkStoreClass
+    {
+        [Test]
+        [Arguments("github-anthropics-claude-code-15542")]
+        [Arguments("example-com")]
+        [Arguments("a1")]
+        public void ShouldAcceptIdsInSlugFormat(string id) => LinkStore.IsValidId(id).ShouldBeTrue();
+
+        [Test]
+        [Arguments("")]
+        [Arguments("../x")]
+        [Arguments("a/b")]
+        [Arguments("a\\b")]
+        [Arguments("Upper")]
+        [Arguments("a--b")]
+        [Arguments("-a")]
+        [Arguments("a-")]
+        [Arguments("a\n")]
+        public void ShouldRejectIdsOutsideSlugFormat(string id) => LinkStore.IsValidId(id).ShouldBeFalse();
     }
 }

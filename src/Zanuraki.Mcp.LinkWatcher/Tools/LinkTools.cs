@@ -191,7 +191,7 @@ public sealed class LinkTools(
         {
             foreach (var id in ids.Distinct())
             {
-                var link = store.Get(id);
+                var link = FindLinkOrNull(id);
                 if (link is null)
                 {
                     errors.Add(new LinkError(id, null, $"No watched link with id '{id}'."));
@@ -340,9 +340,9 @@ public sealed class LinkTools(
     public RemovedLink RemoveLink(
         [Description("Link id")] string id)
     {
-        if (!store.Delete(id))
+        if (!LinkStore.IsValidId(id) || !store.Delete(id))
         {
-            throw new McpException($"No watched link with id '{id}'.");
+            throw UnknownLink(id);
         }
 
         return new RemovedLink(id);
@@ -418,8 +418,11 @@ public sealed class LinkTools(
 
     private static string LinkKindName(LinkKind kind) => kind.ToString().ToLowerInvariant();
 
-    private WatchedLink FindLink(string id) =>
-        store.Get(id) ?? throw new McpException($"No watched link with id '{id}'.");
+    private WatchedLink FindLink(string id) => FindLinkOrNull(id) ?? throw UnknownLink(id);
+
+    private WatchedLink? FindLinkOrNull(string id) => LinkStore.IsValidId(id) ? store.Get(id) : null;
+
+    private static McpException UnknownLink(string id) => new($"No watched link with id '{id}'.");
 
     private string CheckedBy(Uri url) => sourceResolver.Resolve(url) is null ? AgentCheckedBy : ApiCheckedBy;
 

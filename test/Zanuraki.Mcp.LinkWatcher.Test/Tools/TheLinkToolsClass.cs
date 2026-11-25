@@ -41,6 +41,8 @@ public abstract class TheLinkToolsClass
         Resolver = new SourceResolver([Source]);
     }
 
+    protected string DataPath => Path.Combine(_root, "links");
+
     protected ILinkSource Source { get; } = Substitute.For<ILinkSource>();
 
     protected TimeProvider Time { get; } = new FixedTimeProvider(Now);
@@ -409,6 +411,18 @@ public abstract class TheLinkToolsClass
 
             ShouldBeError(await CallAsync(fixture.Client, "get_link", new() { ["id"] = "missing" }), "No watched link with id 'missing'");
         }
+
+        [Test]
+        public async Task ShouldRejectIdOutsideSlugFormatWithoutTouchingTheFolder()
+        {
+            var outside = Path.Combine(Path.GetDirectoryName(DataPath)!, "outside.md");
+            Directory.CreateDirectory(Path.GetDirectoryName(DataPath)!);
+            File.WriteAllText(outside, "outside");
+            await using var fixture = await CreateFixtureAsync();
+
+            ShouldBeError(await CallAsync(fixture.Client, "get_link", new() { ["id"] = "../outside" }), "No watched link with id '../outside'");
+            File.Exists(outside).ShouldBeTrue();
+        }
     }
 
     public class TheCheckLinksMethod : TheLinkToolsClass
@@ -533,6 +547,17 @@ public abstract class TheLinkToolsClass
 
             result!.Errors.Single().Id.ShouldBe("missing");
             result.Errors.Single().Url.ShouldBeNull();
+        }
+
+        [Test]
+        public async Task ShouldReportIdOutsideSlugFormatAsErrorWithoutFetching()
+        {
+            await using var fixture = await CreateFixtureAsync();
+
+            var result = Parse<CheckLinksResult>(await CallAsync(fixture.Client, "check_links", new() { ["ids"] = new[] { "../x" } }));
+
+            result!.Errors.Single().Id.ShouldBe("../x");
+            _ = Source.DidNotReceiveWithAnyArgs().FetchAsync(default!, default);
         }
     }
 
@@ -705,6 +730,18 @@ public abstract class TheLinkToolsClass
             await using var fixture = await CreateFixtureAsync();
 
             ShouldBeError(await CallAsync(fixture.Client, "remove_link", new() { ["id"] = "missing" }), "No watched link with id 'missing'");
+        }
+
+        [Test]
+        public async Task ShouldRejectIdOutsideSlugFormatWithoutDeletingOutsideTheFolder()
+        {
+            var outside = Path.Combine(Path.GetDirectoryName(DataPath)!, "outside.md");
+            Directory.CreateDirectory(Path.GetDirectoryName(DataPath)!);
+            File.WriteAllText(outside, "outside");
+            await using var fixture = await CreateFixtureAsync();
+
+            ShouldBeError(await CallAsync(fixture.Client, "remove_link", new() { ["id"] = "../outside" }), "No watched link with id '../outside'");
+            File.Exists(outside).ShouldBeTrue();
         }
     }
 }

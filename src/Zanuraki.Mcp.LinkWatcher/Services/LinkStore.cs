@@ -3,6 +3,7 @@ namespace Zanuraki.Mcp.LinkWatcher.Services;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using Zanuraki.Mcp.LinkWatcher.Configuration;
 using Zanuraki.Mcp.LinkWatcher.Models;
@@ -10,6 +11,9 @@ using Zanuraki.Mcp.LinkWatcher.Models;
 public sealed class LinkStore
 {
     private const string DateFormat = "yyyy-MM-dd";
+
+    /// <summary>Matches the ids <see cref="LinkIdFactory"/> produces. Anchors use \A and \z so a trailing newline is rejected.</summary>
+    private static readonly Regex IdPattern = new(@"\A[a-z0-9]+(-[a-z0-9]+)*\z");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -36,12 +40,15 @@ public sealed class LinkStore
         }
 
         return Directory.EnumerateFiles(_dataPath)
-            .Where(path => Path.GetExtension(path) == ".md")
+            .Where(path => Path.GetExtension(path) == ".md" && IsValidId(Path.GetFileNameWithoutExtension(path)))
             .Select(path => ParseLink(Path.GetFileNameWithoutExtension(path), File.ReadAllText(path)))
             .OrderBy(link => link.Added)
             .ThenBy(link => link.Id, StringComparer.Ordinal)
             .ToList();
     }
+
+    /// <summary>True when <paramref name="id"/> has the slug format of ids from <see cref="LinkIdFactory"/>, so it is safe as a file name.</summary>
+    public static bool IsValidId(string id) => IdPattern.IsMatch(id);
 
     public WatchedLink? Get(string id)
     {
@@ -111,7 +118,7 @@ public sealed class LinkStore
         }
 
         var orphans = Directory.EnumerateFiles(_statePath)
-            .Where(path => Path.GetExtension(path) == ".json")
+            .Where(path => Path.GetExtension(path) == ".json" && IsValidId(Path.GetFileNameWithoutExtension(path)))
             .Where(path => !File.Exists(MarkdownPath(Path.GetFileNameWithoutExtension(path))))
             .ToList();
 
@@ -135,9 +142,12 @@ public sealed class LinkStore
         File.Move(tempPath, path, overwrite: true);
     }
 
-    private string MarkdownPath(string id) => Path.Combine(_dataPath, id + ".md");
+    private string MarkdownPath(string id) => Path.Combine(_dataPath, RequireValidId(id) + ".md");
 
-    private string StatePath(string id) => Path.Combine(_statePath, id + ".json");
+    private string StatePath(string id) => Path.Combine(_statePath, RequireValidId(id) + ".json");
+
+    private static string RequireValidId(string id) =>
+        IsValidId(id) ? id : throw new ArgumentException($"'{id}' is not a valid link id.", nameof(id));
 
     private WatchedLink ParseLink(string id, string markdown)
     {
