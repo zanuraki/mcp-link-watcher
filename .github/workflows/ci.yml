@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    env:
+      TUNIT_DISABLE_HTML_REPORTER: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v5
+      - name: Build solution
+        run: dotnet build -c Release
+      - name: Run tests
+        run: dotnet test -c Release
