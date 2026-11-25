@@ -4,6 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Zanuraki.Mcp.LinkWatcher.Configuration;
 using Zanuraki.Mcp.LinkWatcher.Filters;
+using Zanuraki.Mcp.LinkWatcher.Services;
+using Zanuraki.Mcp.LinkWatcher.Services.Sources;
+using Zanuraki.Mcp.LinkWatcher.Tools;
 
 internal static class ServiceCollectionExtensions
 {
@@ -12,7 +15,14 @@ internal static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<LinkWatcherOptions>(configuration.GetSection(LinkWatcherOptions.SectionName));
-        services.AddHttpClient();
+        services.AddHttpClient(string.Empty, client => client.Timeout = TimeSpan.FromSeconds(20));
+        services.AddSingleton<FrontmatterService>();
+        services.AddSingleton<LinkStore>();
+        services.AddSingleton<ILinkSource, GitHubIssueSource>();
+        services.AddSingleton<ILinkSource, BugzillaSource>();
+        services.AddSingleton<SourceResolver>();
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<LinkTools>();
 
         services
             .AddMcpServer()

@@ -32,4 +32,8 @@
     <Content Include="appsettings.json" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Zanuraki.Mcp.LinkWatcher.Test" />
+  </ItemGroup>
+
 </Project>
