@@ -10,7 +10,7 @@ public static partial class LinkIdFactory
     /// <summary>Derives the stable file-name id for a watched URL. The same URL always yields the same id.</summary>
     public static string Create(Uri url)
     {
-        var id = GitHubId(url) ?? BugzillaId(url) ?? $"{url.Host}-{url.AbsolutePath}";
+        var id = GitHubId(url) ?? BugzillaId(url) ?? $"{url.Host}-{url.AbsolutePath}{url.Query}";
         return Slugify(id);
     }
 

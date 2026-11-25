@@ -43,6 +43,13 @@ public abstract class TheLinkIdFactoryClass
         }
 
         [Test]
+        public void ShouldIncludeQueryStringInGenericId()
+        {
+            LinkIdFactory.Create(new Uri("https://forum.example.org/viewtopic.php?t=1"))
+                .ShouldNotBe(LinkIdFactory.Create(new Uri("https://forum.example.org/viewtopic.php?t=2")));
+        }
+
+        [Test]
         public void ShouldStripLeadingWwwFromGenericHost()
         {
             LinkIdFactory.Create(new Uri("https://www.example.com/a"))
