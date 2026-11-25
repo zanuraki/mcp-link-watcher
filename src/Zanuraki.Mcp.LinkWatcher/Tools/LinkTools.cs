@@ -301,8 +301,8 @@ public sealed class LinkTools(
     [McpServerTool]
     [Description(
         """
-        Changes the fields of a watched link. Omit a field to leave it unchanged. related, when given, replaces the whole
-        list of related ids. The check state and update history are not affected.
+        Changes the fields of a watched link. Omit a field to leave it unchanged. Pass an empty workaround to remove it.
+        related, when given, replaces the whole list of related ids. The check state and update history are not affected.
         Use it when the user corrects or refines a link, for example a clearer resolvedWhen or a better title.
         Returns the updated link.
         """)]
@@ -312,7 +312,7 @@ public sealed class LinkTools(
         [Description("New kind: bug, support or feature")] string? kind = null,
         [Description("New why")] string? why = null,
         [Description("New resolvedWhen")] string? resolvedWhen = null,
-        [Description("New workaround")] string? workaround = null,
+        [Description("New workaround. An empty string removes it; omit to keep the current one")] string? workaround = null,
         [Description("Replacement list of related link ids")] string[]? related = null)
     {
         var link = FindLink(id);
@@ -322,7 +322,7 @@ public sealed class LinkTools(
             Kind = kind is null ? link.Kind : ParseKind(kind),
             Why = why ?? link.Why,
             ResolvedWhen = resolvedWhen ?? link.ResolvedWhen,
-            Workaround = workaround ?? link.Workaround,
+            Workaround = workaround is null ? link.Workaround : (string.IsNullOrWhiteSpace(workaround) ? null : workaround),
             Related = related ?? link.Related,
         };
         store.Save(updated);

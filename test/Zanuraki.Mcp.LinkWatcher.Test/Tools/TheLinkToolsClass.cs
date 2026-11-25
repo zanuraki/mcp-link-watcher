@@ -683,6 +683,39 @@ public abstract class TheLinkToolsClass
         }
 
         [Test]
+        [Arguments("")]
+        [Arguments("   ")]
+        public async Task ShouldClearWorkaroundWhenBlank(string workaround)
+        {
+            Store.Save(CreateLink(GitHubUrl) with { Workaround = "Disable hardware scaling." });
+            await using var fixture = await CreateFixtureAsync();
+
+            var result = Parse<LinkDetails>(await CallAsync(fixture.Client, "update_link", new()
+            {
+                ["id"] = GitHubId,
+                ["workaround"] = workaround,
+            }));
+
+            result!.Workaround.ShouldBeNull();
+            Store.Get(GitHubId)!.Workaround.ShouldBeNull();
+        }
+
+        [Test]
+        public async Task ShouldKeepWorkaroundWhenOmitted()
+        {
+            Store.Save(CreateLink(GitHubUrl) with { Workaround = "Disable hardware scaling." });
+            await using var fixture = await CreateFixtureAsync();
+
+            var result = Parse<LinkDetails>(await CallAsync(fixture.Client, "update_link", new()
+            {
+                ["id"] = GitHubId,
+                ["title"] = "Renamed",
+            }));
+
+            result!.Workaround.ShouldBe("Disable hardware scaling.");
+        }
+
+        [Test]
         public async Task ShouldReplaceRelatedList()
         {
             Store.Save(CreateLink(GitHubUrl) with { Related = ["a"] });
